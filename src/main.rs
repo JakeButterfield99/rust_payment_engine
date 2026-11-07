@@ -54,6 +54,12 @@ fn output_accounts(accounts_mgr: &AccountsManager) {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        println!("Error: Missing input CSV file");
+        println!("Usage: cargo run -- <input_csv_file> > <output_csv_file>");
+        return;
+    }
+
     let csv_file = &args[1];
 
     let mut accounts_mgr = AccountsManager::new();
