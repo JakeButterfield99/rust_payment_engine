@@ -50,6 +50,21 @@ impl AccountsManager {
         })
     }
 
+    fn set_available_funds(&mut self, user_id: u16, amount: Decimal) {
+        let account = self.get_account(user_id);
+        account.available = amount;
+    }
+
+    fn set_held_funds(&mut self, user_id: u16, amount: Decimal) {
+        let account = self.get_account(user_id);
+        account.held = amount;
+    }
+
+    fn set_locked(&mut self, user_id: u16, locked: bool) {
+        let account = self.get_account(user_id);
+        account.locked = locked;
+    }
+
     pub fn export_accounts(&self) -> Vec<UserExport> {
         let mut exported = Vec::new();
         for (client, account) in &self.accounts {
@@ -133,8 +148,9 @@ impl AccountsManager {
     fn handle_deposit(&mut self, record: TransactionRecord) {
         let account = self.get_account(record.client);
         let amount = utils::parse_amount(record.amount);
+        let new_amount = account.available + amount;
 
-        account.available += amount;
+        self.set_available_funds(record.client, new_amount);
         self.log_deposit(record.tx, amount);
     }
 
@@ -147,7 +163,8 @@ impl AccountsManager {
             return;
         }
 
-        account.available -= amount;
+        let new_amount = account.available - amount;
+        self.set_available_funds(record.client, new_amount);
     }
 
     fn handle_dispute(&mut self, record: TransactionRecord) {
@@ -169,8 +186,10 @@ impl AccountsManager {
             return;
         }
 
-        account.available -= amount;
-        account.held += amount;
+        let new_available = account.available - amount;
+        let new_held = account.held + amount;
+        self.set_available_funds(record.client, new_available);
+        self.set_held_funds(record.client, new_held);
 
         self.mark_disputed(record.tx);
     }
@@ -194,8 +213,10 @@ impl AccountsManager {
             return;
         }
 
-        account.held -= amount;
-        account.available += amount;
+        let new_held = account.held - amount;
+        let new_available = account.available + amount;
+        self.set_held_funds(record.client, new_held);
+        self.set_available_funds(record.client, new_available);
 
         self.mark_resolved(record.tx);
     }
@@ -219,8 +240,9 @@ impl AccountsManager {
             return;
         }
 
-        account.held -= amount;
-        account.locked = true;
+        let new_held = account.held - amount;
+        self.set_held_funds(record.client, new_held);
+        self.set_locked(record.client, true);
         self.mark_resolved(record.tx);
     }
 
