@@ -43,10 +43,10 @@ fn process_csv(accounts_mgr: &mut AccountsManager, csv_file: &String) -> Result<
 fn output_accounts(accounts_mgr: &AccountsManager) {
     let accounts = accounts_mgr.export_accounts();
 
-    println!("client,available,held,total,locked");
+    println!("client, available, held, total, locked");
     for account in accounts {
         println!(
-            "{},{:.4},{:.4},{:.4},{}",
+            "{}, {:.4}, {:.4}, {:.4}, {}",
             account.client, account.available, account.held, account.total, account.locked
         );
     }
