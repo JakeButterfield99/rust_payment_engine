@@ -21,7 +21,7 @@ I made some decisions on libraries, formatting & architecture which do contain s
     - This allows better precision when dealing with floating-point arithmetic which I deemed crucial for a financial application.
     - This comes at a cost of performance and readability/standards of a standard Rust application.
 - Idempotency Keys
-    - In order to account for the case of duplicates transaction, I implemented an idempotency key system. This encodes details of the transaction to ensure it doesn't appear twice.
+    - In order to account for the case of duplicate transactions, I implemented an idempotency key system. This encodes details of the transaction to ensure it doesn't appear twice.
     - This comes at the cost of performance and space.
 - Duplicate User Data when exporting
     - When exporting it is exported as it's own `UserExport` type.
@@ -32,7 +32,7 @@ I made some decisions on libraries, formatting & architecture which do contain s
 - Using getters & setters in internal functions
     - This doesn't necessarily have any performance impact but adds extra 'unnecessary' code.
     - Allows calls for dispute checks, editing user funds, etc. to have extra logic applied relatively easily compared to interacting with the data directly in the handlers.
-    - These calls could also be used implemented in other ways such as interfacing with customer service, test accounts etc.
+    - These calls could also be implemented in other ways such as interfacing with customer service, test accounts etc.
 
 ## Testing
 
