@@ -17,16 +17,9 @@ struct TransactionRecord {
     amount: Option<f32>,
 }
 
-// Parse transaction type and apply record to account manager
+// Apply record to account manager
 fn handle_transaction(accounts_mgr: &mut AccountsManager, record: TransactionRecord) {
-    match record.typ.as_str() {
-        "deposit" => accounts_mgr.handle_deposit(record),
-        "withdrawal" => accounts_mgr.handle_withdrawal(record),
-        "dispute" => accounts_mgr.handle_dispute(record),
-        "resolve" => accounts_mgr.handle_resolve(record),
-        "chargeback" => accounts_mgr.handle_chargeback(record),
-        _ => (),
-    }
+    accounts_mgr.handle_transaction(record);
 }
 
 // Parse CSV file line-by-line, pass down any recognised transactions to be processed
