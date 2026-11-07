@@ -1834,3 +1834,41 @@ Once you add duplicate transaction detection logic to your `AccountsManager`, th
 - New transaction IDs still process normally
 
 The test is well-documented with clear assertion messages explaining what each check verifies.
+
+Excellent! Here's what I added:
+
+## ✅ New Test Added: Locked Account Rejects Transactions
+
+I've added **`test_locked_account_rejects_transactions`** which verifies that a locked account properly rejects all subsequent transaction attempts.
+
+### Test Flow:
+
+1. **Setup**: Deposit $500.00 and $250.5678
+    - Initial balance: $750.5678
+    - Account unlocked ✓
+
+2. **Lock the account**: Dispute then chargeback
+    - After chargeback: Account is **LOCKED** 🔒
+    - Balance: $250.5678 (chargebacked amount removed)
+
+3. **Verify all transactions are ignored**:
+    - ❌ **Deposit** attempt: Should be ignored (currently processed - test fails here)
+    - ❌ **Withdrawal** attempt: Should be ignored
+    - ❌ **Dispute** attempt: Should be ignored
+    - ❌ **Resolve** attempt: Should be ignored
+    - ❌ **Chargeback** attempt: Should be ignored
+
+4. **Verify final state**:
+    - Account remains locked
+    - Balance unchanged at $250.5678
+    - No held funds
+
+### Current Status:
+
+- **12 tests passing** ✓
+- **1 test failing** (as expected) - Shows that deposits are still being processed on locked accounts when they should be ignored
+- **1 test failing** (from before - duplicate detection) - Still pending duplicate transaction implementation
+
+### Why This Test Is Important:
+
+This test ensures that your `locked` flag is actually enforced at the transaction handler level. Once you implement the fix to check `locked_status` at the beginning of `handle_deposit()`, `handle_withdrawal()`, `handle_dispute()`, `handle_resolve()`, and `handle_chargeback()`, this test will pass.

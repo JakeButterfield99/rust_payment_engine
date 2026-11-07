@@ -697,4 +697,110 @@ mod tests {
             "Duplicate deposit of tx 101 should be rejected"
         );
     }
+
+    // Test 13: Locked account should reject all subsequent transactions
+    #[test]
+    fn test_locked_account_rejects_transactions() {
+        let mut manager = AccountsManager::new();
+        let client_id = 13;
+
+        // Initial deposits
+        manager.handle_transaction(create_transaction(
+            "deposit",
+            client_id,
+            200,
+            Some(500.0000),
+        ));
+        manager.handle_transaction(create_transaction(
+            "deposit",
+            client_id,
+            201,
+            Some(250.5678),
+        ));
+        let initial_balance = d(500.0000) + d(250.5678);
+        assert_eq!(manager.get_available_funds(client_id), initial_balance);
+        assert_eq!(manager.get_held_funds(client_id), Decimal::ZERO);
+        assert_eq!(manager.get_locked_status(client_id), false);
+
+        // Dispute and chargeback to lock the account
+        manager.handle_transaction(create_transaction("dispute", client_id, 200, None));
+        assert_eq!(manager.get_held_funds(client_id), d(500.0000));
+        assert_eq!(manager.get_locked_status(client_id), false);
+
+        manager.handle_transaction(create_transaction("chargeback", client_id, 200, None));
+        assert_eq!(manager.get_available_funds(client_id), d(250.5678));
+        assert_eq!(manager.get_held_funds(client_id), Decimal::ZERO);
+        assert_eq!(
+            manager.get_locked_status(client_id),
+            true,
+            "Account should be locked after chargeback"
+        );
+
+        // Try to deposit - should be ignored
+        manager.handle_transaction(create_transaction(
+            "deposit",
+            client_id,
+            202,
+            Some(100.1111),
+        ));
+        assert_eq!(
+            manager.get_available_funds(client_id),
+            d(250.5678),
+            "Deposit on locked account should be ignored"
+        );
+
+        // Try to withdraw - should be ignored
+        manager.handle_transaction(create_transaction(
+            "withdrawal",
+            client_id,
+            203,
+            Some(50.0000),
+        ));
+        assert_eq!(
+            manager.get_available_funds(client_id),
+            d(250.5678),
+            "Withdrawal on locked account should be ignored"
+        );
+
+        // Try to dispute an existing transaction - should be ignored
+        manager.handle_transaction(create_transaction("dispute", client_id, 201, None));
+        assert_eq!(
+            manager.get_available_funds(client_id),
+            d(250.5678),
+            "Available funds should remain unchanged after dispute on locked account"
+        );
+        assert_eq!(
+            manager.get_held_funds(client_id),
+            Decimal::ZERO,
+            "Held funds should remain unchanged after dispute on locked account"
+        );
+
+        // Try to resolve a dispute - should be ignored
+        manager.handle_transaction(create_transaction("resolve", client_id, 201, None));
+        assert_eq!(
+            manager.get_available_funds(client_id),
+            d(250.5678),
+            "Resolve on locked account should be ignored"
+        );
+
+        // Try another chargeback - should be ignored
+        manager.handle_transaction(create_transaction("chargeback", client_id, 201, None));
+        assert_eq!(
+            manager.get_available_funds(client_id),
+            d(250.5678),
+            "Chargeback on locked account should be ignored"
+        );
+
+        // Verify account is still locked
+        assert_eq!(
+            manager.get_locked_status(client_id),
+            true,
+            "Account should remain locked"
+        );
+        assert_eq!(
+            manager.get_held_funds(client_id),
+            Decimal::ZERO,
+            "Held funds should remain zero"
+        );
+    }
 }
