@@ -1,8 +1,8 @@
-use crate::TransactionRecord;
 use rust_decimal::Decimal;
 use serde::Serialize;
 use std::collections::HashMap;
 
+use crate::TransactionRecord;
 use crate::utils;
 
 #[derive(Debug, Serialize)]
@@ -40,7 +40,7 @@ impl AccountsManager {
         }
     }
 
-    // Account Management
+    /* --- Account Management --- */
 
     fn get_account(&mut self, user_id: u16) -> &mut UserAccount {
         self.accounts.entry(user_id).or_insert(UserAccount {
@@ -65,6 +65,7 @@ impl AccountsManager {
         account.locked = locked;
     }
 
+    // Convert accounts into export format and return
     pub fn export_accounts(&self) -> Vec<UserExport> {
         let mut exported = Vec::new();
         for (client, account) in &self.accounts {
@@ -101,18 +102,21 @@ impl AccountsManager {
             .map_or(false, |account| account.locked)
     }
 
-    // Transaction Tracking
+    /* --- Transaction Tracking --- */
 
+    // Encode transaction and ensure we haven't seen it before
     fn is_duplicate(&self, record: &TransactionRecord) -> bool {
         let tx_key = utils::get_transaction_key(&record.typ, record.client, record.tx);
         self.tx_keys.contains(&tx_key)
     }
 
+    // Encode transaction and keep a record of it
     fn log_transaction(&mut self, record: &TransactionRecord) {
         let tx_key = utils::get_transaction_key(&record.typ, record.client, record.tx);
         self.tx_keys.push(tx_key);
     }
 
+    // Keep a log of a deposit transaction
     fn log_deposit(&mut self, tx: u32, amount: Decimal) {
         self.transactions.insert(
             tx,
@@ -143,7 +147,7 @@ impl AccountsManager {
         }
     }
 
-    // Transaction Handlers
+    /* --- Transaction Handlers --- */
 
     fn handle_deposit(&mut self, record: TransactionRecord) {
         let account = self.get_account(record.client);
@@ -243,6 +247,7 @@ impl AccountsManager {
         let new_held = account.held - amount;
         self.set_held_funds(record.client, new_held);
         self.set_locked(record.client, true);
+
         self.mark_resolved(record.tx);
     }
 
